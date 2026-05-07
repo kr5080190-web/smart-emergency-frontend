@@ -4,8 +4,6 @@ import { useGeolocation } from "../hooks/useGeolocation";
 function PanicButton({ onAlert }) {
   const { coordinates, error } = useGeolocation();
   const [state, setState] = useState("idle"); 
-  // idle | counting | sent
-
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
@@ -21,7 +19,7 @@ function PanicButton({ onAlert }) {
 
         if (count === 0) {
           clearInterval(timer);
-          sendAlert();
+          sendEmergency();
         }
       }, 1000);
     }
@@ -29,7 +27,7 @@ function PanicButton({ onAlert }) {
     return () => clearInterval(timer);
   }, [state]);
 
-  const sendAlert = () => {
+  const sendEmergency = () => {
     if (!coordinates) {
       alert("Enable GPS location");
       setState("idle");
@@ -42,14 +40,21 @@ function PanicButton({ onAlert }) {
 
     const message = `🚨 EMERGENCY ALERT!\n\nMy live location:\n${mapLink}\n\nPlease help ASAP!`;
 
+    console.log("SOS SENT:", mapLink);
+
+    // copy fallback
     navigator.clipboard.writeText(message);
 
+    // ✅ FIXED WHATSAPP OPEN (RELIABLE METHOD)
     const whatsappURL = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    const win = window.open(whatsappURL, "_blank");
 
-    if (!win) {
-      alert("WhatsApp blocked. Message copied.");
-    }
+    const a = document.createElement("a");
+    a.href = whatsappURL;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 
     setState("sent");
 
@@ -57,7 +62,7 @@ function PanicButton({ onAlert }) {
       onAlert({ latitude, longitude, mapLink });
     }
 
-    // reset UI after 3 sec
+    // reset UI after 3 seconds
     setTimeout(() => {
       setState("idle");
       setCountdown(3);
@@ -87,6 +92,7 @@ function PanicButton({ onAlert }) {
 
       {state === "counting" && (
         <div className="flex flex-col items-center">
+
           <div className="bg-red-600 text-white text-5xl rounded-full w-40 h-40 flex items-center justify-center animate-pulse">
             {countdown}
           </div>
@@ -98,15 +104,16 @@ function PanicButton({ onAlert }) {
             Cancel
           </button>
 
-          <p className="mt-2 text-sm text-gray-400">
+          <p className="text-sm text-gray-400 mt-2">
             Hold for 3 seconds to confirm alert
           </p>
+
         </div>
       )}
 
       {state === "sent" && (
         <div className="text-center">
-          <div className="text-green-500 text-xl font-bold">
+          <div className="text-green-500 font-bold text-xl">
             🚨 Emergency Sent
           </div>
           <p className="text-gray-400 text-sm">
