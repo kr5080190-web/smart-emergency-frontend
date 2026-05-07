@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useGeolocation } from "../hooks/useGeolocation";
 
 function PanicButton({ onAlert }) {
@@ -7,11 +7,20 @@ function PanicButton({ onAlert }) {
   const [state, setState] = useState("idle"); // idle | counting | sent
   const [countdown, setCountdown] = useState(3);
 
-  // 🚨 Emergency function (FIXED for Vercel + React)
+  // 🚨 prevents double execution (IMPORTANT FIX)
+  const hasSentRef = useRef(false);
+
+  // =========================
+  // EMERGENCY FUNCTION (RUNS ONCE)
+  // =========================
   const sendEmergency = useCallback(() => {
+    if (hasSentRef.current) return;
+    hasSentRef.current = true;
+
     if (!coordinates) {
       alert("Enable GPS location");
       setState("idle");
+      hasSentRef.current = false;
       return;
     }
 
@@ -24,16 +33,9 @@ function PanicButton({ onAlert }) {
     // backup copy
     navigator.clipboard.writeText(message);
 
-    // WhatsApp open (reliable method)
+    // ✅ ONLY ONE WhatsApp OPEN (NO DUPLICATES)
     const whatsappURL = `https://wa.me/?text=${encodeURIComponent(message)}`;
-
-    const a = document.createElement("a");
-    a.href = whatsappURL;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    window.open(whatsappURL, "_blank", "noopener,noreferrer");
 
     setState("sent");
 
@@ -41,14 +43,17 @@ function PanicButton({ onAlert }) {
       onAlert({ latitude, longitude, mapLink });
     }
 
-    // reset UI after 3 seconds
+    // reset after 3 seconds
     setTimeout(() => {
       setState("idle");
       setCountdown(3);
+      hasSentRef.current = false;
     }, 3000);
   }, [coordinates, onAlert]);
 
-  // ⏱ Countdown logic
+  // =========================
+  // COUNTDOWN FLOW
+  // =========================
   useEffect(() => {
     let timer;
 
@@ -70,6 +75,9 @@ function PanicButton({ onAlert }) {
     return () => clearInterval(timer);
   }, [state, sendEmergency]);
 
+  // =========================
+  // HANDLERS
+  // =========================
   const handlePress = () => {
     setState("counting");
   };
@@ -77,8 +85,12 @@ function PanicButton({ onAlert }) {
   const handleCancel = () => {
     setState("idle");
     setCountdown(3);
+    hasSentRef.current = false;
   };
 
+  // =========================
+  // UI
+  // =========================
   return (
     <div className="flex flex-col items-center mt-10">
 
@@ -92,7 +104,7 @@ function PanicButton({ onAlert }) {
         </button>
       )}
 
-      {/* COUNTDOWN UI */}
+      {/* COUNTDOWN */}
       {state === "counting" && (
         <div className="flex flex-col items-center">
 
