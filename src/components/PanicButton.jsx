@@ -1,11 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGeolocation } from '../hooks/useGeolocation';
-import { emergencyService } from '../services/api';
 
 function PanicButton({ onAlert }) {
   const { coordinates, error } = useGeolocation();
   const [isPressed, setIsPressed] = useState(false);
   const [countdown, setCountdown] = useState(null);
+
+  useEffect(() => {
+    // cleanup if component unmounts during countdown
+    return () => {
+      setIsPressed(false);
+      setCountdown(null);
+    };
+  }, []);
+
+  const triggerEmergency = async () => {
+    if (!coordinates) {
+      alert('Enable GPS location');
+      return;
+    }
+
+    console.log('Emergency Alert Sent', coordinates);
+
+    if (onAlert) {
+      onAlert(coordinates);
+    }
+  };
 
   const handlePress = () => {
     setIsPressed(true);
@@ -29,18 +49,9 @@ function PanicButton({ onAlert }) {
     setCountdown(null);
   };
 
-  const triggerEmergency = async () => {
-    if (!coordinates) {
-      alert('Enable GPS location');
-      return;
-    }
-
-    console.log('Emergency Alert Sent'); 
-    onAlert();
-  };
-
   return (
     <div className="flex flex-col items-center mt-10">
+
       {!isPressed ? (
         <button
           onClick={handlePress}
@@ -50,6 +61,7 @@ function PanicButton({ onAlert }) {
         </button>
       ) : (
         <div className="flex flex-col items-center">
+
           <div className="bg-red-600 text-white text-5xl rounded-full w-40 h-40 flex items-center justify-center animate-pulse">
             {countdown}
           </div>
@@ -60,10 +72,14 @@ function PanicButton({ onAlert }) {
           >
             Cancel
           </button>
+
         </div>
       )}
 
-      {error && <p className="text-red-400 mt-3">{error}</p>}
+      {error && (
+        <p className="text-red-400 mt-3">{error}</p>
+      )}
+
     </div>
   );
 }
