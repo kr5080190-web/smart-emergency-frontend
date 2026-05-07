@@ -1,67 +1,92 @@
-import React, { useState, useEffect } from 'react';
-import { useGeolocation } from '../hooks/useGeolocation';
+import React, { useState, useEffect } from "react";
+import { useGeolocation } from "../hooks/useGeolocation";
 
 function PanicButton({ onAlert }) {
   const { coordinates, error } = useGeolocation();
-  const [isPressed, setIsPressed] = useState(false);
-  const [countdown, setCountdown] = useState(null);
+  const [state, setState] = useState("idle"); 
+  // idle | counting | sent
+
+  const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
-    // cleanup if component unmounts during countdown
-    return () => {
-      setIsPressed(false);
-      setCountdown(null);
-    };
-  }, []);
+    let timer;
 
-  const triggerEmergency = async () => {
+    if (state === "counting") {
+      let count = 3;
+      setCountdown(count);
+
+      timer = setInterval(() => {
+        count -= 1;
+        setCountdown(count);
+
+        if (count === 0) {
+          clearInterval(timer);
+          sendAlert();
+        }
+      }, 1000);
+    }
+
+    return () => clearInterval(timer);
+  }, [state]);
+
+  const sendAlert = () => {
     if (!coordinates) {
-      alert('Enable GPS location');
+      alert("Enable GPS location");
+      setState("idle");
       return;
     }
 
-    console.log('Emergency Alert Sent', coordinates);
+    const { latitude, longitude } = coordinates;
+
+    const mapLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+    const message = `🚨 EMERGENCY ALERT!\n\nMy live location:\n${mapLink}\n\nPlease help ASAP!`;
+
+    navigator.clipboard.writeText(message);
+
+    const whatsappURL = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    const win = window.open(whatsappURL, "_blank");
+
+    if (!win) {
+      alert("WhatsApp blocked. Message copied.");
+    }
+
+    setState("sent");
 
     if (onAlert) {
-      onAlert(coordinates);
+      onAlert({ latitude, longitude, mapLink });
     }
+
+    // reset UI after 3 sec
+    setTimeout(() => {
+      setState("idle");
+      setCountdown(3);
+    }, 3000);
   };
 
   const handlePress = () => {
-    setIsPressed(true);
-
-    let count = 3;
-    setCountdown(count);
-
-    const timer = setInterval(() => {
-      count -= 1;
-      setCountdown(count);
-
-      if (count === 0) {
-        clearInterval(timer);
-        triggerEmergency();
-      }
-    }, 1000);
+    setState("counting");
   };
 
   const handleCancel = () => {
-    setIsPressed(false);
-    setCountdown(null);
+    setState("idle");
+    setCountdown(3);
   };
 
   return (
     <div className="flex flex-col items-center mt-10">
 
-      {!isPressed ? (
+      {state === "idle" && (
         <button
           onClick={handlePress}
           className="bg-red-600 text-white rounded-full w-40 h-40 text-4xl font-bold shadow-lg hover:bg-red-700 active:scale-95"
         >
           SOS
         </button>
-      ) : (
-        <div className="flex flex-col items-center">
+      )}
 
+      {state === "counting" && (
+        <div className="flex flex-col items-center">
           <div className="bg-red-600 text-white text-5xl rounded-full w-40 h-40 flex items-center justify-center animate-pulse">
             {countdown}
           </div>
@@ -73,6 +98,20 @@ function PanicButton({ onAlert }) {
             Cancel
           </button>
 
+          <p className="mt-2 text-sm text-gray-400">
+            Hold for 3 seconds to confirm alert
+          </p>
+        </div>
+      )}
+
+      {state === "sent" && (
+        <div className="text-center">
+          <div className="text-green-500 text-xl font-bold">
+            🚨 Emergency Sent
+          </div>
+          <p className="text-gray-400 text-sm">
+            Help is being notified
+          </p>
         </div>
       )}
 
