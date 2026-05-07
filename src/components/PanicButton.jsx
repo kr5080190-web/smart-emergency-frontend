@@ -1,33 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useGeolocation } from "../hooks/useGeolocation";
 
 function PanicButton({ onAlert }) {
   const { coordinates, error } = useGeolocation();
-  const [state, setState] = useState("idle"); 
+
+  const [state, setState] = useState("idle"); // idle | counting | sent
   const [countdown, setCountdown] = useState(3);
 
-  useEffect(() => {
-    let timer;
-
-    if (state === "counting") {
-      let count = 3;
-      setCountdown(count);
-
-      timer = setInterval(() => {
-        count -= 1;
-        setCountdown(count);
-
-        if (count === 0) {
-          clearInterval(timer);
-          sendEmergency();
-        }
-      }, 1000);
-    }
-
-    return () => clearInterval(timer);
-  }, [state]);
-
-  const sendEmergency = () => {
+  // 🚨 Emergency function (FIXED for Vercel + React)
+  const sendEmergency = useCallback(() => {
     if (!coordinates) {
       alert("Enable GPS location");
       setState("idle");
@@ -40,12 +21,10 @@ function PanicButton({ onAlert }) {
 
     const message = `🚨 EMERGENCY ALERT!\n\nMy live location:\n${mapLink}\n\nPlease help ASAP!`;
 
-    console.log("SOS SENT:", mapLink);
-
-    // copy fallback
+    // backup copy
     navigator.clipboard.writeText(message);
 
-    // ✅ FIXED WHATSAPP OPEN (RELIABLE METHOD)
+    // WhatsApp open (reliable method)
     const whatsappURL = `https://wa.me/?text=${encodeURIComponent(message)}`;
 
     const a = document.createElement("a");
@@ -67,7 +46,29 @@ function PanicButton({ onAlert }) {
       setState("idle");
       setCountdown(3);
     }, 3000);
-  };
+  }, [coordinates, onAlert]);
+
+  // ⏱ Countdown logic
+  useEffect(() => {
+    let timer;
+
+    if (state === "counting") {
+      let count = 3;
+      setCountdown(count);
+
+      timer = setInterval(() => {
+        count -= 1;
+        setCountdown(count);
+
+        if (count === 0) {
+          clearInterval(timer);
+          sendEmergency();
+        }
+      }, 1000);
+    }
+
+    return () => clearInterval(timer);
+  }, [state, sendEmergency]);
 
   const handlePress = () => {
     setState("counting");
@@ -81,6 +82,7 @@ function PanicButton({ onAlert }) {
   return (
     <div className="flex flex-col items-center mt-10">
 
+      {/* SOS BUTTON */}
       {state === "idle" && (
         <button
           onClick={handlePress}
@@ -90,6 +92,7 @@ function PanicButton({ onAlert }) {
         </button>
       )}
 
+      {/* COUNTDOWN UI */}
       {state === "counting" && (
         <div className="flex flex-col items-center">
 
@@ -111,6 +114,7 @@ function PanicButton({ onAlert }) {
         </div>
       )}
 
+      {/* SENT STATE */}
       {state === "sent" && (
         <div className="text-center">
           <div className="text-green-500 font-bold text-xl">
@@ -122,6 +126,7 @@ function PanicButton({ onAlert }) {
         </div>
       )}
 
+      {/* ERROR */}
       {error && (
         <p className="text-red-400 mt-3">{error}</p>
       )}
