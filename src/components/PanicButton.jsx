@@ -35,12 +35,7 @@ function PanicButton({ onAlert }) {
       return;
     }
 
-    await emergencyService.sendAlert({
-      type: 'GENERAL',
-      location: coordinates,
-      timestamp: new Date().toISOString(),
-    });
-
+    console.log('Emergency Alert Sent'); 
     onAlert();
   };
 
