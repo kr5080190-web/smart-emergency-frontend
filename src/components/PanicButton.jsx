@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useGeolocation } from "../hooks/useGeolocation";
 
 function PanicButton({ onAlert }) {
@@ -7,20 +7,12 @@ function PanicButton({ onAlert }) {
   const [state, setState] = useState("idle"); // idle | counting | sent
   const [countdown, setCountdown] = useState(3);
 
-  // 🚨 prevents double execution (IMPORTANT FIX)
-  const hasSentRef = useRef(false);
-
   // =========================
-  // EMERGENCY FUNCTION (RUNS ONCE)
+  // EMERGENCY FUNCTION
   // =========================
   const sendEmergency = useCallback(() => {
-    if (hasSentRef.current) return;
-    hasSentRef.current = true;
-
     if (!coordinates) {
-      alert("Enable GPS location");
-      setState("idle");
-      hasSentRef.current = false;
+      alert("GPS still loading. Wait 2–3 seconds and try again.");
       return;
     }
 
@@ -33,7 +25,7 @@ function PanicButton({ onAlert }) {
     // backup copy
     navigator.clipboard.writeText(message);
 
-    // ✅ ONLY ONE WhatsApp OPEN (NO DUPLICATES)
+    // OPEN WHATSAPP (reliable method)
     const whatsappURL = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappURL, "_blank", "noopener,noreferrer");
 
@@ -43,11 +35,9 @@ function PanicButton({ onAlert }) {
       onAlert({ latitude, longitude, mapLink });
     }
 
-    // reset after 3 seconds
     setTimeout(() => {
       setState("idle");
       setCountdown(3);
-      hasSentRef.current = false;
     }, 3000);
   }, [coordinates, onAlert]);
 
@@ -76,16 +66,20 @@ function PanicButton({ onAlert }) {
   }, [state, sendEmergency]);
 
   // =========================
-  // HANDLERS
+  // BUTTON CLICK
   // =========================
   const handlePress = () => {
+    if (!coordinates) {
+      alert("Fetching GPS location... Please wait 2–3 seconds and try again.");
+      return;
+    }
+
     setState("counting");
   };
 
   const handleCancel = () => {
     setState("idle");
     setCountdown(3);
-    hasSentRef.current = false;
   };
 
   // =========================
@@ -126,7 +120,7 @@ function PanicButton({ onAlert }) {
         </div>
       )}
 
-      {/* SENT STATE */}
+      {/* SENT */}
       {state === "sent" && (
         <div className="text-center">
           <div className="text-green-500 font-bold text-xl">
