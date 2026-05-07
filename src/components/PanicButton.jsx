@@ -8,11 +8,12 @@ function PanicButton({ onAlert }) {
   const [countdown, setCountdown] = useState(3);
 
   // =========================
-  // EMERGENCY FUNCTION
+  // SEND EMERGENCY
   // =========================
   const sendEmergency = useCallback(() => {
     if (!coordinates) {
-      alert("GPS still loading. Wait 2–3 seconds and try again.");
+      alert("GPS not ready yet. Please wait a moment and try again.");
+      setState("idle");
       return;
     }
 
@@ -25,7 +26,7 @@ function PanicButton({ onAlert }) {
     // backup copy
     navigator.clipboard.writeText(message);
 
-    // OPEN WHATSAPP (reliable method)
+    // WhatsApp open (reliable)
     const whatsappURL = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappURL, "_blank", "noopener,noreferrer");
 
@@ -35,6 +36,7 @@ function PanicButton({ onAlert }) {
       onAlert({ latitude, longitude, mapLink });
     }
 
+    // reset UI
     setTimeout(() => {
       setState("idle");
       setCountdown(3);
@@ -42,7 +44,7 @@ function PanicButton({ onAlert }) {
   }, [coordinates, onAlert]);
 
   // =========================
-  // COUNTDOWN FLOW
+  // COUNTDOWN LOGIC
   // =========================
   useEffect(() => {
     let timer;
@@ -66,11 +68,11 @@ function PanicButton({ onAlert }) {
   }, [state, sendEmergency]);
 
   // =========================
-  // BUTTON CLICK
+  // HANDLE SOS PRESS
   // =========================
   const handlePress = () => {
     if (!coordinates) {
-      alert("Fetching GPS location... Please wait 2–3 seconds and try again.");
+      alert("Fetching GPS... Please wait a few seconds and try again.");
       return;
     }
 

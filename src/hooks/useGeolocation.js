@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export function useGeolocation() {
   const [coordinates, setCoordinates] = useState(null);
@@ -6,25 +6,27 @@ export function useGeolocation() {
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setError('Geolocation not supported');
+      setError("Geolocation not supported");
       return;
     }
 
-    const success = (pos) => {
-      setCoordinates({
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
-      });
-    };
-
-    const fail = (err) => {
-      setError(err.message);
-    };
-
-    const watchId = navigator.geolocation.watchPosition(success, fail, {
-      enableHighAccuracy: true,
-    });
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setCoordinates({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setError(null);
+      },
+      (err) => {
+        setError(err.message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000,
+      }
+    );
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
