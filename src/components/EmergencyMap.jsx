@@ -8,25 +8,39 @@ function EmergencyMap({ userLocation }) {
 
     const map = L.map('map').setView(
       [userLocation.latitude, userLocation.longitude],
-      14
+      13
     );
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
+      attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
 
-    L.marker([userLocation.latitude, userLocation.longitude])
+    L.marker([
+      userLocation.latitude,
+      userLocation.longitude,
+    ])
       .addTo(map)
       .bindPopup('You are here')
       .openPopup();
 
-    return () => map.remove();
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+
+    return () => {
+      map.remove();
+    };
   }, [userLocation]);
 
   return (
     <div
       id="map"
-      className="h-96 w-full rounded-lg shadow-lg mt-5"
+      style={{
+        height: '400px',
+        width: '100%',
+        borderRadius: '12px',
+        marginTop: '20px',
+      }}
     />
   );
 }
