@@ -1,6 +1,5 @@
-import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import "./styles/global.css";
+
 import Home from "./pages/Home";
 import SOS from "./pages/SOS";
 import Dashboard from "./pages/Dashboard";
@@ -8,25 +7,16 @@ import LiveMap from "./pages/LiveMap";
 import Architecture from "./pages/Architecture";
 import Team from "./pages/Team";
 
-import "./styles/global.css";
-
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         <Route path="/" element={<Home />} />
-
         <Route path="/sos" element={<SOS />} />
-
         <Route path="/dashboard" element={<Dashboard />} />
-
         <Route path="/map" element={<LiveMap />} />
-
         <Route path="/architecture" element={<Architecture />} />
-
         <Route path="/team" element={<Team />} />
-
       </Routes>
     </BrowserRouter>
   );
